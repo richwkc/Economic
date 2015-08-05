@@ -92,28 +92,42 @@
 	employStdev <- sd(employ$'Unemployment rate (rate)', na.rm=TRUE)	
 
 	#calculate seasonally adjusted home sales volumn
-	index <- max(which(is.na(hpi$X.1)))
-	
-	seasonAdj <- NULL
-	ratio <- NULL
-	dates <- NULL
 	finalTable <- as.vector(NULL)
-	for (o in 1:(length(hpi$X.1)-index-12))
+	for (p in seq(3, ncol(hpi), 2))
 	{
-		x <- mean(hpi$X.1[(index+o):(index+o+11)])
-		y <- mean(hpi$X.1[(index+o+1):(index+o+12)])
-		seasonAdj <- c(seasonAdj, (x+y)/2)
-		ratio <- c(ratio, hpi$X.1[index+6+o]/((x+y)/2))
-		dates <- c(dates, hpi$Transaction.Date[index+6+o])
+		if (length(hpi[,p]) == length(which(!is.na(hpi[,p]))))
+		{
+			index <- 0
+		}
+		else
+		{
+			index <- max(which(is.na(hpi[,p])))
+		}
+
+		seasonAdj <- NULL
+		ratio <- NULL
+		dates <- NULL
+		
+		for (o in 1:(length(hpi[,p])-index-12))
+		{
+			x <- mean(hpi[,p][(index+o):(index+o+11)])
+			y <- mean(hpi[,p][(index+o+1):(index+o+12)])
+			seasonAdj <- c(seasonAdj, (x+y)/2)
+			ratio <- c(ratio, hpi[,p][index+6+o]/((x+y)/2))
+			dates <- c(dates, hpi$Transaction.Date[index+6+o])
+		}
+
+		seasonTable <- data.frame(cbind(dates, seasonAdj, ratio))
+		seasonTable$dates <- as.Date(seasonTable$dates, origin = "1970-01-01")
+
+		seasonTable2 <- split(seasonTable, as.numeric(as.numeric(format(seasonTable$dates, '%m'))))
+		seasonTable3 <- sapply(seasonTable2, function(elt) mean(elt[,3]))
+		sums <- sum(seasonTable3)
+		seasonTable4 <- seasonTable3 / sums * 12
+		finalTable <- cbind(finalTable, seasonTable4)
+
+		colnames(finalTable)[(p-1)/2] <- names(hpi[p-1])	
 	}
-
-	seasonTable <- data.frame(cbind(dates, seasonAdj, ratio))
-	seasonTable$dates <- as.Date(seasonTable$dates, origin = "1970-01-01")
-
-	seasonTable2 <- split(seasonTable, as.numeric(as.numeric(format(seasonTable$dates, '%m'))))
-	seasonTable3 <- sapply(seasonTable2, function(elt) mean(elt[,3]))
-	finalTable <- cbind(finalTable, seasonTable3)
-	colnames(finalTable)[1] <- 'Composite6'	
-
 	
+	write.csv(finalTable,file='homeSales.csv')	
 	write.csv(mergedData, file='output.csv')
