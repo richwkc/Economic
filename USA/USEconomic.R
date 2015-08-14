@@ -1,16 +1,16 @@
 
 
-	filePath <- 'C:/dev/Economic/'
+	filePath <- 'C:/dev/Economic/USA'
 	setwd(filePath)
 	
-	#download real GDP data (chained 2007 dollars) from CANSIM table 379-0031
-	#data starting at Jan 1997
-	#url1 <- 'http://www5.statcan.gc.ca/cansim/results/cansim296894150450386967.csv'
-	#download.file(url1, destfile='gdp.csv', method='libcurl')
+	#download real GDP data MANUALLY from Bureau of Economic Analysis (BEA) in '.xls'
+	#quarterly data starting at Q1 1947 (chained 2009 dollars) and save as '.csv'
+	#'http://www.bea.gov/national/index.htm#gdp'
+	#download.file(url1, destfile='gdplev.csv', method='libcurl')
 
-	#download unemployment data from CANSIM table 282-0087
-	#data starting at Jan 1976
-	#url2 <- 'http://www5.statcan.gc.ca/cansim/results/cansim3942031476492388427.csv'
+	#download unemployment data from Bureau of Labor Statistics in '.xlsx'
+	#data starting at Jan 1948, select column format and save as '.csv'
+	#'http://data.bls.gov/timeseries/LNS14000000'
 	#download.file(url2, destfile='employ.csv', method='libcurl')
 
 	#download HPI and sales from housepriceindex.ca MANUALLY in xls and save as .csv
@@ -19,24 +19,42 @@
 	#download.file(url3, destfile='hpi.xls', method='libcurl')
 	
 	#read GDP
-	gdp <- read.csv('gdp.csv')
-	gdp <- gdp[,-(2:5)]
+	gdp <- read.csv('gdplev.csv')
+	gdp <- gdp[-(1:5),-(1:4)]
+	gdp <- gdp[-(1:2),-(4:5)]
+	names(gdp) <- c('Date', 'gdpCurrentDollar', 'gdp2009Dollar')
 	gdp[,1] <- as.character(gdp[,1])
+	gdp[,2] <- as.numeric(gsub(',','',as.character(gdp[,2])))
+	gdp[,3] <- as.numeric(gsub(',','',as.character(gdp[,3])))
 
 	#fix Ref_Date column, set day to 15th for every month
 	for (i in 1:(nrow(gdp)))
 	{
-		gdp[i,1] <- paste(gdp[i,1],'/15',sep='')
+		if (substr(gdp[i,1],5,6) == 'q1')
+		{
+			gdp[i,1] <- paste(substr(gdp[i,1],1,4),'/03/15',sep='')
+		}
+		else if (substr(gdp[i,1],5,6) == 'q2')
+		{
+			gdp[i,1] <- paste(substr(gdp[i,1],1,4),'/06/15',sep='')
+		}
+		else if (substr(gdp[i,1],5,6) == 'q3')
+		{
+			gdp[i,1] <- paste(substr(gdp[i,1],1,4),'/09/15',sep='')
+		}
+		else if (substr(gdp[i,1],5,6) == 'q4')
+		{
+			gdp[i,1] <- paste(substr(gdp[i,1],1,4),'/12/15',sep='')
+		}
 	}
 
 	gdp[,1] <- as.Date(gdp[,1],'%Y/%m/%d')
-	names(gdp)[2] <- 'realGDP'
 		
-	#calculate monthly % change in GDP
+	#calculate quarterly % change in real GDP
 	gdpDelta <- NA
 	for (j in 1:(nrow(gdp))) 
 	{
-		gdpDelta <- c(gdpDelta, gdp[j,2] / gdp[j-1,2] - 1)
+		gdpDelta <- c(gdpDelta, gdp[j,3] / gdp[j-1,3] - 1)
 	}	
 	gdp2 <- cbind(gdp, gdpDelta)
 	gdpMean <- mean(gdpDelta, na.rm=TRUE)
@@ -46,24 +64,79 @@
 
 	#read unemployment rate and participation rate
 	employ <- read.csv('employ.csv')
-	employ <- employ[,c(-2,-4,-5,-6)]
-	library(reshape2)
-	employ <- dcast(employ, Ref_Date ~ CHARACTERISTICS, value.var='Value')
+	employ <- employ[-(1:11),c(-1,-5,-6)]
 	
 	#fix Ref_Date column, set day to 15th for every month
 	employ[,1] <- as.character(employ[,1])
 	for (k in 1:(nrow(employ)))
 	{
-		employ[k,1] <- paste(employ[k,1],'/15',sep='')
+		if (employ[k,2] == 'M01')
+		{
+			employ[k,1] <- paste(employ[k,1],'/01/15',sep='')
+		}
+		else if (employ[k,2] == 'M02')
+		{
+			employ[k,1] <- paste(employ[k,1],'/02/15',sep='')
+		}
+		else if (employ[k,2] == 'M03')
+		{
+			employ[k,1] <- paste(employ[k,1],'/03/15',sep='')
+		}
+		else if (employ[k,2] == 'M04')
+		{
+			employ[k,1] <- paste(employ[k,1],'/04/15',sep='')
+		}
+		else if (employ[k,2] == 'M05')
+		{
+			employ[k,1] <- paste(employ[k,1],'/05/15',sep='')
+		}
+		else if (employ[k,2] == 'M06')
+		{
+			employ[k,1] <- paste(employ[k,1],'/06/15',sep='')
+		}
+		else if (employ[k,2] == 'M07')
+		{
+			employ[k,1] <- paste(employ[k,1],'/07/15',sep='')
+		}
+		else if (employ[k,2] == 'M08')
+		{
+			employ[k,1] <- paste(employ[k,1],'/08/15',sep='')
+		}
+		else if (employ[k,2] == 'M09')
+		{
+			employ[k,1] <- paste(employ[k,1],'/09/15',sep='')
+		}
+		else if (employ[k,2] == 'M10')
+		{
+			employ[k,1] <- paste(employ[k,1],'/10/15',sep='')
+		}
+		else if (employ[k,2] == 'M11')
+		{
+			employ[k,1] <- paste(employ[k,1],'/11/15',sep='')
+		}
+		else if (employ[k,2] == 'M12')
+		{
+			employ[k,1] <- paste(employ[k,1],'/12/15',sep='')
+		}
 	}
 
 	employ[,1] <- as.Date(employ[,1],'%Y/%m/%d')
+	employ <- employ[,-2]
+	employ[,2] <- as.numeric(gsub(',','',as.character(employ[,2])))
+	names(employ) <- c('Date', 'unemployRate')
 
 	#calculate avg and stdev of unemployment rate
-	employMean <- mean(employ$'Unemployment rate (rate)', na.rm=TRUE)
-	employStdev <- sd(employ$'Unemployment rate (rate)', na.rm=TRUE)
+	employMean <- mean(employ$unemployRate, na.rm=TRUE)
+	employStdev <- sd(employ$unemployRate, na.rm=TRUE)
 	input <- c(input, employMean, employStdev)
+	names(input) <- c('gdpMean', 'gdpStdev', 'lastGdpDate', 'lastGdp', 'employMean', 'employStdev')
 
+	#merge tables
+	mergedData <- merge(gdp2, employ, by.x= 'Date', by.y = 'Date', all=TRUE)
+
+	write.csv(input,file='input.csv')	
+	write.csv(mergedData, file='output.csv')
+----------------------------------------------------------------------------------------------
 	#read HPI
 	hpi <- read.csv('hpi.csv')
 	hpi <- hpi [-(1:3), -2]
